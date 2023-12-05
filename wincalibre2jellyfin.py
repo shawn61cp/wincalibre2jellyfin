@@ -167,6 +167,8 @@ def readMetadatafile(metadataFilePath):
     finally:
         docfile.close()
 
+    return doc
+    
 
 def getSeries(metadataFilePath):
     """Extracts series and series index from book metadata file
