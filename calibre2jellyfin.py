@@ -4,7 +4,7 @@
 #
 #   Python script to construct a Jellyfin ebook library from a Calibre library.
 #
-#   2023-11-17 initial revision
+#   2023-12-05 initial revision
 #   author Shawn C. Powell
 #
 
@@ -32,7 +32,7 @@ def logError(msg, e):
     print(e, file=stderr, flush=True)
 
 
-configfilepath = Path.home() / '.config' / (Path(__file__).stem + '.cfg')
+configfilepath = Path(Path(__file__).stem + '.cfg')
 
 # Parse command line arguments
 
