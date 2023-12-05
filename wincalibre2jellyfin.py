@@ -13,6 +13,7 @@ import argparse
 from sys import stderr, exit
 from pathlib import Path
 from xml.dom import minidom
+from shutil import copyfile
 
 
 # ------------------
@@ -107,6 +108,66 @@ def findCover(bookFolderSrcPath):
     return None
 
 
+def readMetadatafileFallback(metadataFilePath):
+    """Reads book metadata, use in case of UnicodeDecodeError
+
+        metadataFilePath    pathlib.Path, full path to metadata file
+
+        returns             minidom doc object
+                            None on failure
+
+        This is a workaround for some unicode decode errors that
+        were encountered during testing under Windows (10).
+        It's puzzling because using the same Calibre library
+        under Linux did not suffer from the issue.
+        
+    """
+    # open the metadata file
+    try:
+        docfile = open(metadataFilePath, encoding='ascii', errors='backslashreplace')
+    except Exception as e:
+        logError(f'Could not open metadata file {metadataFilePath}', e)
+        return None
+
+    # create a document object from the metadata file
+    try:
+        doc = minidom.parse(docfile)
+    except Exception as e:
+        logError(f'Could not read metadata file {metadataFilePath}', e)
+        return None
+    finally:
+        docfile.close()
+
+    return doc
+
+
+def readMetadatafile(metadataFilePath):
+    """Reads book metadata
+
+        metadataFilePath    pathlib.Path, full path to metadata file
+
+        returns             minidom doc object
+                            None on failure
+    """
+    # open the metadata file
+    try:
+        docfile = open(metadataFilePath, encoding='utf8')
+    except Exception as e:
+        logError(f'Could not open metadata file {metadataFilePath}', e)
+        return None
+
+    # create a document object from the metadata file
+    try:
+        doc = minidom.parse(docfile)
+    except UnicodeDecodeError as e:
+        return readMetadatafileFallback(metadataFilePath)
+    except Exception as e:
+        logError(f'Could not read metadata file {metadataFilePath}', e)
+        return None
+    finally:
+        docfile.close()
+
+
 def getSeries(metadataFilePath):
     """Extracts series and series index from book metadata file
 
@@ -118,35 +179,21 @@ def getSeries(metadataFilePath):
     series = ''
     series_index = ''
     doc = None
+
     if not metadataFilePath:
         return doc, series, series_index
 
-    # open the metadata file
-    try:
-        docfile = open(metadataFilePath)
-    except Exception as e:
-        logError(f'Could not open metadata file {metadataFilePath}', e)
-        return doc, series, series_index
-
-    # create a document object from the metadata file
-    try:
-        doc = minidom.parse(docfile)
-    except Exception as e:
-        doc = None
-        logError(f'Could not read metadata file {metadataFilePath}', e)
-        return doc, series, series_index
-    finally:
-        docfile.close()
+    doc = readMetadatafile(metadataFilePath)
 
     # get series info
-    metas = doc.getElementsByTagName('meta')
-    for m in metas:
-        if m.getAttribute('name') == 'calibre:series':
-            series = m.getAttribute('content')
-        elif m.getAttribute('name') == 'calibre:series_index':
-            series_index = m.getAttribute('content')
+    if doc is not None:
+        metas = doc.getElementsByTagName('meta')
+        for m in metas:
+            if m.getAttribute('name') == 'calibre:series':
+                series = m.getAttribute('content')
+            elif m.getAttribute('name') == 'calibre:series_index':
+                series_index = m.getAttribute('content')
 
-    docfile.close()
     return doc, series, series_index
 
 
@@ -226,22 +273,22 @@ def doBook(authorSrcPath, authorDstPath, bookFolderSrcPath, bookfiletypes, folde
             metadatadoc.unlink()
         return
 
-    # Create a symlink to the source book if it does not exist
+    # copy the book file
     bookFileDstPath = bookFolderDstPath / bookFileSrcPath.name
     if not bookFileDstPath.exists():
         try:
-            bookFileDstPath.symlink_to(bookFileSrcPath)
+            copyfile(bookFileSrcPath, bookFileDstPath)
         except Exception as e:
-            logError(f'Could not create book symlink {bookFileDstPath}', e)
+            logError(f'Could not the book file {bookFileDstPath}', e)
 
-    # Create a symlink to the cover image if it does not exist
+    # copy the cover image
     if coverSrcFilePath is not None:
         coverDstFilePath = bookFolderDstPath / coverSrcFilePath.name
         if not coverDstFilePath.exists():
             try:
-                coverDstFilePath.symlink_to(coverSrcFilePath)
+                copyfile(coverSrcFilePath, coverDstFilePath)
             except Exception as e:
-                logError(f'Could not create cover image symlink {coverDstFilePath}', e)
+                logError(f'Could not the cover image {coverDstFilePath}', e)
 
     # Output a metadata xml (.opf) file into the destination book folder.
     # If folder mode is 'author,series,book' and series info was found,
