@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-#   calibre2jellyfin.py
+#   wincalibre2jellyfin.py
 #
 #   Python script to construct a Jellyfin ebook library from a Calibre library.
 #
