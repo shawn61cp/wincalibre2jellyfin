@@ -14,7 +14,8 @@ from sys import stderr, exit
 from pathlib import Path
 from xml.dom import minidom
 from shutil import copyfile
-
+from os import stat
+import re
 
 # ------------------
 #   Set up
@@ -208,7 +209,7 @@ def writeMetadata(metadatadoc, metadataDstFilePath):
         returns                 None
     """
     try:
-        docfile = open(metadataDstFilePath, 'w')
+        docfile = open(metadataDstFilePath, 'w', encoding='utf8')
     except Exception as e:
         logError(
             f'Could not create (or truncate existing) metadata file {metadataDstFilePath}',
@@ -222,6 +223,27 @@ def writeMetadata(metadatadoc, metadataDstFilePath):
         logError(f'Could not write metadata file {metadataDstFilePath}', e)
     finally:
         docfile.close()
+
+
+def sanitizeFilename(s):
+    """Removes illegal characters from strings that will be incorporated in
+    file names.
+
+        s                   string to sanitize
+        returns             sanitized string
+
+    From: stackoverflow thread https://stackoverflow.com/questions/7406102/create-sane-safe-filename-from-any-unsafe-string
+    By: Mitch McMabers https://stackoverflow.com/users/8874388/mitch-mcmabers and others
+    """
+    
+    # illegal chars
+    z = re.sub(r"[/\\?%*:|\"<>\x7F\x00-\x1F]", "-", s)
+    # windows illegal file names
+    z = re.sub(r"^(CON|CONIN\$|CONOUT\$|PRN|AUX|CLOCK\$|NUL|COM0|COM1|COM2|COM3|COM4|COM5|COM6|COM7|COM8|COM9|LPT0|LPT1|LPT2|LPT3|LPT4|LPT5|LPT6|LPT7|LPT8|LPT9|LST|KEYBD\$|SCREEN\$|\$IDLE\$|CONFIG\$)(\.|$)", '-', z, flags=re.IGNORECASE)
+    # windows illegal chars at start/end
+    z = re.sub(r"^ |[. ]$", '-', z)
+    
+    return z
 
 
 def doBook(authorSrcPath, authorDstPath, bookFolderSrcPath, bookfiletypes, foldermode, jellyfinStore):
@@ -257,8 +279,8 @@ def doBook(authorSrcPath, authorDstPath, bookFolderSrcPath, bookfiletypes, folde
     if series > '' and foldermode == 'author,series,book':
         if series_index == '':
             series_index = '99'
-        bookFolder = '{:>03s} - {}'.format(series_index, bookFolder)
-        bookFolderDstPath = authorDstPath / (series + ' Series') / bookFolder
+        bookFolder = sanitizeFilename('{:>03s} - {}'.format(series_index, bookFolder))
+        bookFolderDstPath = authorDstPath / sanitizeFilename(series + ' Series') / bookFolder
     elif foldermode == 'book':
         bookFolderDstPath = jellyfinStore / bookFolder
     else:
@@ -277,7 +299,14 @@ def doBook(authorSrcPath, authorDstPath, bookFolderSrcPath, bookfiletypes, folde
 
     # copy the book file
     bookFileDstPath = bookFolderDstPath / bookFileSrcPath.name
-    if not bookFileDstPath.exists():
+    copyBook = False
+    if bookFileDstPath.exists():
+        if stat(bookFileDstPath).st_mtime < stat(bookFileSrcPath).st_mtime:
+            copyBook = True
+    else:
+        copyBook = True
+
+    if copyBook:
         try:
             copyfile(bookFileSrcPath, bookFileDstPath)
         except Exception as e:
@@ -286,7 +315,14 @@ def doBook(authorSrcPath, authorDstPath, bookFolderSrcPath, bookfiletypes, folde
     # copy the cover image
     if coverSrcFilePath is not None:
         coverDstFilePath = bookFolderDstPath / coverSrcFilePath.name
-        if not coverDstFilePath.exists():
+        copyCover = False
+        if coverDstFilePath.exists():
+            if stat(coverDstFilePath).st_mtime < stat(coverSrcFilePath).st_mtime:
+                copyCover = True
+        else:
+            copyCover = True
+            
+        if copyCover:
             try:
                 copyfile(coverSrcFilePath, coverDstFilePath)
             except Exception as e:
@@ -299,12 +335,20 @@ def doBook(authorSrcPath, authorDstPath, bookFolderSrcPath, bookfiletypes, folde
     # Otherwise, just write out a copy of the original metadata.
     if metadatadoc is not None:
         metadataDstFilePath = bookFolderDstPath / metadataSrcFilePath.name
-        if series > '' and foldermode == 'author,series,book':
-            titleel = metadatadoc.getElementsByTagName('dc:title')[0]
-            titleel.firstChild.data = '{:>03s} - {}'.format(series_index, titleel.firstChild.data)
+        copyMetadata = False
+        if metadataDstFilePath.exists():
+            if stat(metadataDstFilePath).st_mtime < stat(metadataSrcFilePath).st_mtime:
+                copyMetadata = True
+        else:
+            copyMetadata = True
 
-        writeMetadata(metadatadoc, metadataDstFilePath)
-        metadatadoc.unlink()
+        if copyMetadata:
+            if series > '' and foldermode == 'author,series,book':
+                titleel = metadatadoc.getElementsByTagName('dc:title')[0]
+                titleel.firstChild.data = '{:>03s} - {}'.format(series_index, titleel.firstChild.data)
+
+            writeMetadata(metadatadoc, metadataDstFilePath)
+            metadatadoc.unlink()
 
 
 def doConstruct(section):
