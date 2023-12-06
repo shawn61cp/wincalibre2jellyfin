@@ -1,5 +1,5 @@
 <em>Although the script is complete, the documentation is UNDER CONSTRUCTION...</em>
-# calibre2jellyfin
+# wincalibre2jellyfin
 Python script to construct a Jellyfin ebook library from a Calibre library.
 
 ## Windows 
