@@ -72,9 +72,9 @@ Jellyfin will display a drillable folder structure similarly to the way it does 
 
 #### Usage
 
-* In file explorer, navigate to EXTRACT_FOLDER\wincalibre2jellyfin-main
-* calibre2jellyfin.cfg file before first use.
-* Double click on calibre2jellyfin.py to run the script
+* In file explorer, navigate to EXTRACT_FOLDER\wincalibre2jellyfin-main\
+* Edit the wincalibre2jellyfin.cfg file before first use.
+* Double click on wincalibre2jellyfin.py to run the script
 
 
 #### Calibre Author Folders
