@@ -2,7 +2,7 @@
 Python script to construct a Jellyfin ebook library from a Calibre library.
 
 ## Windows 
-<em>(The Linux version of this script is maintained as a separate project.  Please see [calibre2jellyfin](https://github.com/shawn61cp/calibre2jellyfin).</em>
+<em>(The Linux version of this script is maintained as a separate project.  Please see [calibre2jellyfin](https://github.com/shawn61cp/calibre2jellyfin)).</em>
 
 #### Overview
 * Created folder structure (foldermode in .cfg) is one of:
