@@ -1,4 +1,4 @@
-<em>Although the script is complete, the documentation is UNDER CONSTRUCTION...</em>
+<em>Although the script is complete, this documentation is UNDER CONSTRUCTION...</em>
 # wincalibre2jellyfin
 Python script to construct a Jellyfin ebook library from a Calibre library.
 
@@ -7,15 +7,15 @@ Python script to construct a Jellyfin ebook library from a Calibre library.
 
 #### Overview
 * Created folder structure (foldermode in .cfg) is one of:
-  * .../author/series/book/...
-  * .../book/...
+  * ...\author\series\book\...
+  * ...\book\...
 * Destination book folder contains
-  * symlink to book file in Calibre library
-  * symlink to cover image in Calibre library
+  * copy of book file from Calibre library
+  * copy of cover image from Calibre library
   * copy, possibly modified, of Calibre's metadata file
 * Books are selected for inclusion by listing author folders in the .cfg file
 * Series handling
-  * When foldermode is author/series/book, the script will extract series and series index from Calibre's metadata file.  If found, the target book folder name will be prepended with the series index.  So will the \<dc:title\> element in the metadata file.  If series info is expected but not found, the structure collapses to .../author/book/....
+  * When foldermode is author\series\book, the script will extract series and series index from Calibre's metadata file.  If found, the target book folder name will be prepended with the series index.  So will the \<dc:title\> element in the metadata file.  If series info is expected but not found, the structure collapses to ...\author\book\....
 * Multiple output libraries may be configured 
 
 #### Example author/series/book structure 
@@ -41,13 +41,13 @@ Python script to construct a Jellyfin ebook library from a Calibre library.
 └── Author/
     └── Lorem ipsum dolor sit amet Series/
         ├── 001 - Book A/
-        │   ├── cover.jpg      <- symlink
+        │   ├── cover.jpg      <- copy
         │   ├── metadata.opf   <- modified copy
-        │   └── Book A.epub    <- symlink
+        │   └── Book A.epub    <- copy
         ├── 002 - Book B/
-        │   ├── cover.jpg      <- symlink
+        │   ├── cover.jpg      <- copy
         │   ├── metadata.opf   <- modified copy
-        │   └── Book B.epub    <- symlink
+        │   └── Book B.epub    <- copy
    </pre>    
    </td>
   </tr>
@@ -56,10 +56,26 @@ Python script to construct a Jellyfin ebook library from a Calibre library.
 Jellyfin will display a drillable folder structure similarly to the way it does for movies, shows, and music.  Jellyfin will extract and display the mangled book title that is prepended with the series index as the book title.
 
 #### Dependencies
+
 * Python 3
+1. In your browser, navigate to [python.org](https://www.python.org/)
+1. In the main menu, hover over "Download".
+1. In the resulting drop down, click on "Windows".
+1. In the first release under the heading "Stable Releases", click on "Windows Installer (64-bit)".  Save the file to your Downloads folder and run it.  This installs Python 3 under your user account.
   
 #### Installation
-TODO
+
+1. In your browser navigate to "https://github.com/shawn61cp/wincalibre2jellyfin"
+1. Click the green "Code" button
+1. In the resulting dropdown, just over halfway down, find and click on "Download ZIP".
+1. Save the zip file somewhere convenient, your Documents folder is suggessted, and extract it.  We will call this EXTRACT_FOLDER.
+
+#### Usage
+
+* In file explorer, navigate to EXTRACT_FOLDER\wincalibre2jellyfin-main
+* calibre2jellyfin.cfg file before first use.
+* Double click on calibre2jellyfin.py to run the script
+
 
 #### Calibre Author Folders
 
