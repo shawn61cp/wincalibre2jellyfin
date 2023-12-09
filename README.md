@@ -26,25 +26,25 @@ Python script to construct a Jellyfin ebook library from a Calibre library.
  <tbody>
   <tr>
    <td><pre>
-└── Author/
-    └── Book A/
+└── Author\
+    └── Book A\
     │   ├── cover.jpg
     │   ├── metadata.opf
     │   └── Book A.epub
-    ├── Book B/
+    ├── Book B\
     │   ├── cover.jpg
     │   ├── metadata.opf
     │   └── Book B.epub
    </pre>
    </td>
    <td><pre>
-└── Author/
-    └── Lorem ipsum dolor sit amet Series/
-        ├── 001 - Book A/
+└── Author\
+    └── Lorem ipsum dolor sit amet Series\
+        ├── 001 - Book A\
         │   ├── cover.jpg      <- copy
         │   ├── metadata.opf   <- modified copy
         │   └── Book A.epub    <- copy
-        ├── 002 - Book B/
+        ├── 002 - Book B\
         │   ├── cover.jpg      <- copy
         │   ├── metadata.opf   <- modified copy
         │   └── Book B.epub    <- copy
