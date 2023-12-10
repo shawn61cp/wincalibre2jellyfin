@@ -67,7 +67,7 @@ Jellyfin will display a drillable folder structure similarly to the way it does 
 1. In your browser navigate to "https://github.com/shawn61cp/wincalibre2jellyfin"
 1. Click the green "Code" button
 1. In the resulting dropdown, just over halfway down, find and click on "Download ZIP".
-1. Save the zip file somewhere convenient, your Documents folder is suggessted, and extract it.  We will call this EXTRACT_FOLDER.
+1. Save the zip file somewhere convenient, your Documents folder is suggested, and extract it.  We will call this EXTRACT_FOLDER.
 
 #### Usage
 
