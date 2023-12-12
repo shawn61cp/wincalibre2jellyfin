@@ -348,7 +348,8 @@ def doBook(authorSrcPath, authorDstPath, bookFolderSrcPath, bookfiletypes, folde
                 titleel.firstChild.data = '{:>03s} - {}'.format(series_index, titleel.firstChild.data)
 
             writeMetadata(metadatadoc, metadataDstFilePath)
-            metadatadoc.unlink()
+
+        metadatadoc.unlink()
 
 
 def doConstruct(section):
