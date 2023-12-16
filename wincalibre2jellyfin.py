@@ -346,6 +346,11 @@ def doBook(authorSrcPath, authorDstPath, bookFolderSrcPath, bookfiletypes, folde
             if series > '' and foldermode == 'author,series,book':
                 titleel = metadatadoc.getElementsByTagName('dc:title')[0]
                 titleel.firstChild.data = '{:>03s} - {}'.format(series_index, titleel.firstChild.data)
+                descels = metadatadoc.getElementsByTagName('dc:description')
+                if descels:
+                    descel = descels[0]
+                    desc = descel.firstChild.data
+                    descel.firstChild.data = f'<H4>Book {series_index} of <em>{series}</em></H4>{desc}'
 
             writeMetadata(metadatadoc, metadataDstFilePath)
 
