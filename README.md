@@ -14,11 +14,11 @@ Python script to construct a Jellyfin ebook library from a Calibre library.
   * copy, possibly modified, of Calibre's metadata file
 * Books are selected for inclusion by listing author folders in the .cfg file
 * Series handling
-  * When foldermode is author\series\book, the script will extract series and series index from Calibre's metadata file.
-  * If found, the target book folder name will be prepended with the series index.  So will the \<dc:title\> element in the metadata file.
+  * When foldermode is author\series\book, the script will attempt to extract series and series index from Calibre's metadata file.
+  * If found, the target book folder name will be prepended with the series index.  Optionally, the metadata title and the metadata sort_title may be treated in the same way.
   * A short header identifying the index and series is prepended to the book description.
-  * If series info is expected but not found, the structure collapses to ...\author\book\\....
-* Multiple output libraries may be configured 
+  * If series info is expected but not found, the structure collapses to ...\author\book\\.... and no mangling is performed.
+* Multiple output libraries may be configured
 
 #### Example author/series/book structure 
 <table>
@@ -57,6 +57,15 @@ Python script to construct a Jellyfin ebook library from a Calibre library.
 </table>
 Jellyfin will display a drillable folder structure similarly to the way it does for movies, shows, and music.  Jellyfin will extract, display, and sort by the mangled book title that is prepended with the series index.
 
+#### Changes
+* 2024-01-27
+    * Add support for mangling the metadata title sort value
+    * Make metadata mangling behavior configurable (new configuration parameters)
+        * mangleMetaTitle = [1 | 0]
+        * mangleMetaTitleSort = [1 | 0]
+    * Add command line option to force update of all metadata files.
+        * -\-update-all-metadata
+
 #### Dependencies
 
 * Python 3
@@ -78,6 +87,27 @@ Jellyfin will display a drillable folder structure similarly to the way it does 
 * Edit the wincalibre2jellyfin.cfg file before first use.
 * Double click on wincalibre2jellyfin.py to run the script
 
+
+#### Upgrading
+
+Two things need to be accomplished:
+1. Replace your current script, wherever it was originally installed, with the new one.
+    * This can be done basically by following the installation steps but you may need to extract the new zip file to a location other than the one you used originally in order to ensure that your existing configuration is not destroyed.  Once the new zip file is extracted safely, you can copy only the new script over the top of the original script.
+2. Add any new config options to your existing configuration file.
+    * This can be done by copying and pasting any new configuration parameters from the new sample configuration into your current configuration, or even just editing your current configuration.  New configuration options are listed in the *Changes* section and also in the sample .cfg file.
+
+#### Command line  options
+<pre>
+usage: calibre2jellyfin.py [-h] [--update-all-metadata]
+
+A utility to construct a Jellyfin ebook library from a Calibre library. Configuration file "/home/shawn/.config/calibre2jellyfin.cfg" is required.
+
+options:
+  -h, --help            show this help message and exit
+  --update-all-metadata
+                        Useful to force a one-time update of all metadata files, for instance when configurable metadata mangling options have changed. (Normally metadata files are
+                        only updated when missing or out-of-date.)
+</pre>
 
 #### Calibre Author Folders
 

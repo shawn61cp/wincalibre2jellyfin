@@ -40,7 +40,13 @@ configfilepath = Path(Path(__file__).stem + '.cfg')
 
 cmdparser = argparse.ArgumentParser(
     description='A utility to construct a Jellyfin ebook library from a Calibre library.'
-    f' Configuration file {configfilepath} is required.'
+    f' Configuration file "{configfilepath}" is required.'
+)
+cmdparser.add_argument(
+    '--update-all-metadata',
+    dest='updateAllMetadata',
+    action='store_true',
+    help='Useful to force a one-time update of all metadata files, for instance when configurable metadata mangling options have changed. (Normally metadata files are only updated when missing or out-of-date.)'
 )
 cmdargs = cmdparser.parse_args()
 
@@ -49,14 +55,14 @@ cmdargs = cmdparser.parse_args()
 try:
     configfile = open(configfilepath, 'r')
 except Exception as e:
-    logError(f'Could not open configuration {configfilepath}', e)
+    logError(f'Could not open configuration "{configfilepath}"', e)
     exit(-1)
 
 try:
     config = configparser.ConfigParser()
     config.read_file(configfile)
 except Exception as e:
-    logError(f'Could not read configuration {configfilepath}', e)
+    logError(f'Could not read configuration "{configfilepath}"', e)
     exit(-1)
 finally:
     configfile.close()
@@ -171,33 +177,50 @@ def readMetadatafile(metadataFilePath):
     return doc
     
 
-def getSeries(metadataFilePath):
-    """Extracts series and series index from book metadata file
+def getMetadata(metadataFilePath):
+    """Creates a miniDOM object from the metadata file and extracts
+        various strings and elements of interest.
 
         metadataFilePath    pathlib.Path, full path to metadata file
+        
         Returns ()          doc, minidom xml doc object
                             str, name of series, empty str if none
                             str, book index in series, empty str if none
+                            element, <dc:title>
+                            element, <meta name="calibre:title_sort" content="001 - Book Title"/>
+                            element, <dc:description>
     """
+    
     series = ''
     series_index = ''
     doc = None
-
+    titleel = None
+    sortel = None
+    descel = None
+    
     if not metadataFilePath:
-        return doc, series, series_index
+        return doc, series, series_index, titleel, sortel, descel
 
     doc = readMetadatafile(metadataFilePath)
 
-    # get series info
-    if doc is not None:
-        metas = doc.getElementsByTagName('meta')
-        for m in metas:
-            if m.getAttribute('name') == 'calibre:series':
-                series = m.getAttribute('content')
-            elif m.getAttribute('name') == 'calibre:series_index':
-                series_index = m.getAttribute('content')
+    # get series info and other elements
 
-    return doc, series, series_index
+    titleel = doc.getElementsByTagName('dc:title')[0]
+
+    descels = doc.getElementsByTagName('dc:description')
+    if descels:
+        descel = descels[0]
+
+    metas = doc.getElementsByTagName('meta')
+    for m in metas:
+        if m.getAttribute('name') == 'calibre:series':
+            series = m.getAttribute('content')
+        elif m.getAttribute('name') == 'calibre:series_index':
+            series_index = m.getAttribute('content')
+        elif m.getAttribute('name') == 'calibre:title_sort':
+            sortel = m
+
+    return doc, series, series_index, titleel, sortel, descel
 
 
 def writeMetadata(metadatadoc, metadataDstFilePath):
@@ -212,7 +235,7 @@ def writeMetadata(metadatadoc, metadataDstFilePath):
         docfile = open(metadataDstFilePath, 'w', encoding='utf8')
     except Exception as e:
         logError(
-            f'Could not create (or truncate existing) metadata file {metadataDstFilePath}',
+            f'Could not create (or truncate existing) metadata file "{metadataDstFilePath}"',
             e
         )
         return
@@ -220,7 +243,7 @@ def writeMetadata(metadatadoc, metadataDstFilePath):
     try:
         metadatadoc.writexml(docfile)
     except Exception as e:
-        logError(f'Could not write metadata file {metadataDstFilePath}', e)
+        logError(f'Could not write metadata file "{metadataDstFilePath}"', e)
     finally:
         docfile.close()
 
@@ -246,7 +269,7 @@ def sanitizeFilename(s):
     return z
 
 
-def doBook(authorSrcPath, authorDstPath, bookFolderSrcPath, bookfiletypes, foldermode, jellyfinStore):
+def doBook(authorSrcPath, authorDstPath, bookFolderSrcPath, bookfiletypes, foldermode, jellyfinStore, mangleMetaTitle, mangleMetaTitleSort):
     """Creates folder, files and symlinks for one book.
 
         authorSrcPath       pathlib.Path, full path to source author folder
@@ -256,10 +279,14 @@ def doBook(authorSrcPath, authorDstPath, bookFolderSrcPath, bookfiletypes, folde
         foldermode          str, one of 'author,series,book' or 'book'
         jellyfinStore       pathlib.Path, full path top level output storage location
                             (i.e. will be jellyfin library folder)
+        mangleMetaTitle     boolean, true if metadata title should be mangled
+        mangleMetaTitleSort boolean, true if metadata sort title should be mangled
 
         returns             None
     """
 
+    global cmdargs
+    
     # find first instance of configured book file types
     bookFileSrcPath = findBook(bookfiletypes, bookFolderSrcPath)
     if not bookFileSrcPath:
@@ -270,7 +297,7 @@ def doBook(authorSrcPath, authorDstPath, bookFolderSrcPath, bookfiletypes, folde
     bookFolder = bookFolderSrcPath.name
     metadataSrcFilePath = findMetadata(bookFolderSrcPath)
     coverSrcFilePath = findCover(bookFolderSrcPath)
-    metadatadoc, series, series_index = getSeries(metadataSrcFilePath)
+    metadatadoc, series, series_index, titleel, sortel, descel = getMetadata(metadataSrcFilePath)
 
     # Output is organized as '.../author/series/book/book.ext' or '.../book/book.ext' depending on foldermode.
     # If series info was expected but not found, output structure collapses to '.../author/book/book.ext'.
@@ -290,7 +317,7 @@ def doBook(authorSrcPath, authorDstPath, bookFolderSrcPath, bookfiletypes, folde
         bookFolderDstPath.mkdir(parents=True, exist_ok=True)
     except Exception as e:
         logError(
-            f'Could not create book\'s destination folder (or a parent folder thereof) {bookFolderDstPath}',
+            f'Could not create book\'s destination folder (or a parent folder thereof) "{bookFolderDstPath}"',
             e
         )
         if metadatadoc is not None:
@@ -310,7 +337,7 @@ def doBook(authorSrcPath, authorDstPath, bookFolderSrcPath, bookfiletypes, folde
         try:
             copyfile(bookFileSrcPath, bookFileDstPath)
         except Exception as e:
-            logError(f'Could not the book file {bookFileDstPath}', e)
+            logError(f'Could not copy the book file {bookFileDstPath}', e)
 
     # copy the cover image
     if coverSrcFilePath is not None:
@@ -326,17 +353,23 @@ def doBook(authorSrcPath, authorDstPath, bookFolderSrcPath, bookfiletypes, folde
             try:
                 copyfile(coverSrcFilePath, coverDstFilePath)
             except Exception as e:
-                logError(f'Could not the cover image {coverDstFilePath}', e)
+                logError(f'Could not copy the cover image {coverDstFilePath}', e)
 
     # Output a metadata xml (.opf) file into the destination book folder.
-    # If folder mode is 'author,series,book' and series info was found,
-    # mangle the book title (<dc:title>) by prepending the book's index
-    # to it's title.
-    # Otherwise, just write out a copy of the original metadata.
+    # If folder mode is 'author,series,book', series info was found,
+    # and mangling is enabled, mangle the book title (<dc:title>) and/or title_sort
+    # elements by prepending the book's index to it's title.
+    # Also prepend a "Book X of Lorem Ipsum" header to the book description.
+    # Otherwise, write out the original metadata unchanged.
+
     if metadatadoc is not None:
+
         metadataDstFilePath = bookFolderDstPath / metadataSrcFilePath.name
         copyMetadata = False
-        if metadataDstFilePath.exists():
+
+        if cmdargs.updateAllMetadata:
+            copyMetadata = True
+        elif metadataDstFilePath.exists():
             if stat(metadataDstFilePath).st_mtime < stat(metadataSrcFilePath).st_mtime:
                 copyMetadata = True
         else:
@@ -344,13 +377,12 @@ def doBook(authorSrcPath, authorDstPath, bookFolderSrcPath, bookfiletypes, folde
 
         if copyMetadata:
             if series > '' and foldermode == 'author,series,book':
-                titleel = metadatadoc.getElementsByTagName('dc:title')[0]
-                titleel.firstChild.data = '{:>03s} - {}'.format(series_index, titleel.firstChild.data)
-                descels = metadatadoc.getElementsByTagName('dc:description')
-                if descels:
-                    descel = descels[0]
-                    desc = descel.firstChild.data
-                    descel.firstChild.data = f'<H4>Book {series_index} of <em>{series}</em></H4>{desc}'
+                if mangleMetaTitle:
+                    titleel.firstChild.data = '{:>03s} - {}'.format(series_index, titleel.firstChild.data)
+                if mangleMetaTitleSort:
+                    sortel.setAttribute('content', '{:>03s} - {}'.format(series_index, sortel.getAttribute('content')))
+                if descel:
+                    descel.firstChild.data = f'<H4>Book {series_index} of <em>{series}</em></H4>{descel.firstChild.data}'
 
             writeMetadata(metadatadoc, metadataDstFilePath)
 
@@ -365,22 +397,30 @@ def doConstruct(section):
         returns             None
     """
 
-    # convert multiline parameters to lists
-    authorFolders = section['authorFolders'][1:].split('\n')
-    bookfiletypes = section['bookfiletypes'][1:].split('\n')
+    global configfilepath
 
-    calibreStore = Path(section['calibreStore'])
-    jellyfinStore = Path(section['jellyfinStore'])
-    foldermode = section['foldermode']
+    try:
+        # convert multiline configs to lists
+        authorFolders = section['authorFolders'][1:].split('\n')
+        bookfiletypes = section['bookfiletypes'][1:].split('\n')
+        # get simple configs
+        calibreStore = Path(section['calibreStore'])
+        jellyfinStore = Path(section['jellyfinStore'])
+        foldermode = section['foldermode']
+        mangleMetaTitle = section.getboolean('mangleMetaTitle')
+        mangleMetaTitleSort = section.getboolean('mangleMetaTitleSort')
+    except Exception as e:
+        logError(f'A required parameter is missing from {section} in configuration file "{configfilepath}".  Please review the sample configuration.', e)
+        exit(-1)
 
     # sanity check configuration parameters
     try:
         if not calibreStore.is_dir():
-            raise ValueError(f'calibreStore value ("{calibreStore}") is not a directory')
+            raise ValueError(f'calibreStore value "{calibreStore}" is not a directory')
         if not jellyfinStore.is_dir():
-            raise ValueError(f'jellyfinStore value ("{jellyfinStore}") is not a directlry')
+            raise ValueError(f'jellyfinStore value "{jellyfinStore}" is not a directory')
         if jellyfinStore.samefile(calibreStore):
-            raise ValueError(f'jellyfinStore and calibreStore values must be different locations')
+            raise ValueError(f'jellyfinStore and calibreStore must be different locations')
         if foldermode != 'book' and foldermode != 'author,series,book':
             raise ValueError(f'foldermode value must be "book" or "author,series,book"')
         if authorFolders[0] == '':
@@ -388,7 +428,7 @@ def doConstruct(section):
         if bookfiletypes[0] == '':
             raise ValueError('bookfiletypes must contain at least one entry')
     except Exception as e:
-        logError(f'Inappropriate parameter value in configuration file {configfilepath}', e)
+        logError(f'Inappropriate parameter value in {section} in configuration file "{configfilepath}"', e)
         exit(-1)
 
     # for each configured author
@@ -401,18 +441,21 @@ def doConstruct(section):
             try:
                 authorDstPath.mkdir(parents=True, exist_ok=True)
             except Exception as e:
-                logError(f'Could not create author folder {authorDstPath}', e)
+                logError(f'Could not create author folder "{authorDstPath}"', e)
                 continue
 
         # for each book folder in source author folder
         for bookFolderSrcPath in authorSrcPath.iterdir():
-            doBook(authorSrcPath, authorDstPath, bookFolderSrcPath, bookfiletypes, foldermode, jellyfinStore)
+            doBook(authorSrcPath, authorDstPath, bookFolderSrcPath, bookfiletypes, foldermode, jellyfinStore, mangleMetaTitle, mangleMetaTitleSort)
 
 
 # ------------------
 #   Main
 # ------------------
 
+# Default mangling behavior to that of original script
+config['DEFAULT']['mangleMetaTitle'] = '1'
+config['DEFAULT']['mangleMetaTitleSort'] = '0'
 
 # for each configured Construct
 for section in config:
@@ -420,7 +463,7 @@ for section in config:
         try:
             doConstruct(config[section])
         except Exception as e:
-            logError(f'Unexpected error encountered constructing {section}', e)
+            logError(f'Unexpected error encountered constructing [{section}]', e)
             exit(-1)
 
 exit(0)
