@@ -21,6 +21,7 @@ Python script to construct a Jellyfin ebook library from a Calibre library.
 * Multiple output libraries may be configured
 
 #### Example author/series/book structure 
+_Example assumes script has been configured to prefer .epub types over .azw and .mobi._
 <table>
   <thead>
     <tr><th>Calibre store</th><th>Created Jellyfin store</th></tr>
@@ -32,10 +33,12 @@ Python script to construct a Jellyfin ebook library from a Calibre library.
     └── Book A\
     │   ├── cover.jpg
     │   ├── metadata.opf
+    │   ├── Book A.azw
     │   └── Book A.epub
     ├── Book B\
     │   ├── cover.jpg
     │   ├── metadata.opf
+    │   ├── Book B.mobi
     │   └── Book B.epub
    </pre>
    </td>
