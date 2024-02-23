@@ -15,47 +15,16 @@ import re
 import logging
 from pathlib import Path
 from xml.dom import minidom
-from os import stat, utime
+from os import stat
 from shutil import copyfile
 
 # ------------------
-#   Set up
+#   Globals
 # ------------------
 
 
-logging.basicConfig(format='%(levelname)s:%(filename)s:%(lineno)s: %(message)s', level=logging.DEBUG)
 CONFIG_FILE_PATH = Path(Path(__file__).stem + '.cfg')
-
-# Parse command line arguments
-
-cmdparser = argparse.ArgumentParser(
-    description='A utility to construct a Jellyfin ebook library from a Calibre library.'
-    f' Configuration file "{CONFIG_FILE_PATH}" is required.'
-)
-cmdparser.add_argument(
-    '--update-all-metadata',
-    dest='updateAllMetadata',
-    action='store_true',
-    help='Useful to force a one-time update of all metadata files, '
-    'for instance when configurable metadata mangling options have changed. '
-    '(Normally metadata files are only updated when missing or out-of-date.)'
-)
-CMDARGS = cmdparser.parse_args()
-
-# read configuration
-
-try:
-    with open(CONFIG_FILE_PATH, 'r', encoding='utf8') as configfile:
-        config = configparser.ConfigParser()
-        config.read_file(configfile)
-except OSError as configexcep:
-    logging.critical('Could not read configuration "%s": %s', CONFIG_FILE_PATH, configexcep)
-    sys.exit(-1)
-except configparser.Error as configexcep:
-    logging.critical('Invalid configuration "%s": %s', CONFIG_FILE_PATH, configexcep)
-    sys.exit(-1)
-
-logging.info('Using configuration "%s"', CONFIG_FILE_PATH)
+CMDARGS = None
 
 
 # ------------------
@@ -246,19 +215,19 @@ def sanitize_filename(sani):
     """
 
     # illegal chars
-    _ = re.sub(r"[/\\?%*:|\"<>\x7F\x00-\x1F]", "-", sani)
+    sani = re.sub(r"[/\\?%*:|\"<>\x7F\x00-\x1F]", "-", sani)
     # windows illegal file names
-    _ = re.sub(
+    sani = re.sub(
         r"^ ?(CON|CONIN\$|CONOUT\$|PRN|AUX|CLOCK\$|NUL|"
         r"COM0|COM1|COM2|COM3|COM4|COM5|COM6|COM7|COM8|COM9|"
         r"LPT0|LPT1|LPT2|LPT3|LPT4|LPT5|LPT6|LPT7|LPT8|LPT9|"
         r"LST|KEYBD\$|SCREEN\$|\$IDLE\$|CONFIG\$)([. ]|$)",
-        '-', _, flags=re.IGNORECASE
+        '-', sani, flags=re.IGNORECASE
     )
     # windows illegal chars at start/end
-    _ = re.sub(r"^ |[. ]$", '-', _)
+    sani = re.sub(r"^ |[. ]$", '-', sani)
 
-    return _
+    return sani
 
 
 def do_book(
@@ -335,7 +304,7 @@ def do_book(
         try:
             copyfile(book_file_src_path, book_file_dst_path)
         except Exception as excep:
-            loggin.warning(f'Could not copy the book file %s: %s', book_file_dst_path, excep)
+            logging.warning('Could not copy the book file %s: %s', book_file_dst_path, excep)
 
     # copy the cover image
     if cover_file_src_path is not None:
@@ -346,12 +315,12 @@ def do_book(
                 copy_cover = True
         else:
             copy_cover = True
-            
+
         if copy_cover:
             try:
                 copyfile(cover_file_src_path, cover_file_dst_path)
             except Exception as excep:
-                logError(f'Could not copy the cover image %s: %s', coverDstFilePath, excep)
+                logging.warning('Could not copy the cover image %s: %s', cover_file_dst_path, excep)
 
     # Output a metadata xml (.opf) file into the destination book folder.
     # If folder mode is 'author,series,book', series info was found,
@@ -463,17 +432,66 @@ def do_construct(section):
 #   Main
 # ------------------
 
-# Default mangling behavior to that of original script
-config['DEFAULT']['mangleMetaTitle'] = '1'
-config['DEFAULT']['mangleMetaTitleSort'] = '0'
 
-# for each configured Construct
-for section in config:
-    if section[0:9] == 'Construct':
-        try:
-            do_construct(config[section])
-        except Exception as unexpected:
-            logging.critical('Unexpected error encountered constructing [%s]: %s', section, unexpected)
-            sys.exit(-1)
+def main(clargs=None):
 
-sys.exit(0)
+    """Main
+
+        clargs                      [], list of command line arguments
+                                    used to invoke when/if calibre2jellyfin is loaded as a module
+                                    example:
+                                    calibre2jellyfin.main(['--update-all-metadata', ...])
+    """
+
+    global CMDARGS
+
+    logging.basicConfig(format='%(levelname)s:%(filename)s:%(lineno)s: %(message)s', level=logging.DEBUG)
+
+    # Parse command line arguments
+    cmdparser = argparse.ArgumentParser(
+        description='A utility to construct a Jellyfin ebook library from a Calibre library.'
+        f' Configuration file "{CONFIG_FILE_PATH}" is required.'
+    )
+    cmdparser.add_argument(
+        '--update-all-metadata',
+        dest='updateAllMetadata',
+        action='store_true',
+        help='Useful to force a one-time update of all metadata files, '
+        'for instance when configurable metadata mangling options have changed. '
+        '(Normally metadata files are only updated when missing or out-of-date.)'
+    )
+    if clargs:
+        CMDARGS = cmdparser.parse_args(clargs)
+    else:
+        CMDARGS = cmdparser.parse_args()
+
+    # read configuration
+    try:
+        with open(CONFIG_FILE_PATH, 'r', encoding='utf8') as configfile:
+            config = configparser.ConfigParser()
+            config.read_file(configfile)
+    except OSError as configexcep:
+        logging.critical('Could not read configuration "%s": %s', CONFIG_FILE_PATH, configexcep)
+        sys.exit(-1)
+    except configparser.Error as configexcep:
+        logging.critical('Invalid configuration "%s": %s', CONFIG_FILE_PATH, configexcep)
+        sys.exit(-1)
+
+    logging.info('Using configuration "%s"', CONFIG_FILE_PATH)
+
+    # Default mangling behavior to that of original script
+    config['DEFAULT']['mangleMetaTitle'] = '1'
+    config['DEFAULT']['mangleMetaTitleSort'] = '0'
+
+    # for each configured Construct
+    for section in config:
+        if section[0:9] == 'Construct':
+            try:
+                do_construct(config[section])
+            except Exception as unexpected:
+                logging.critical('Unexpected error encountered constructing [%s]: %s', section, unexpected)
+                sys.exit(-1)
+
+
+if __name__ == '__main__':
+    main()
