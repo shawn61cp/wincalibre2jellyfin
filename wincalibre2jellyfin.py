@@ -256,7 +256,7 @@ def do_book(
         author_folder_dst_path      pathlib.Path, full path to destination author folder
         book_folder_src_path        pathlib.Path, full path to source book folder
         book_file_types             list, extensions identifying book files (exclude periods)
-        foldermode                  str, one of 'author,series,book' or 'book'
+        foldermode                  str, one of 'author,series,book', 'series,book' or 'book'
         jellyfin_store              pathlib.Path, full path top level output storage location
                                     (i.e. will be jellyfin library folder)
         mangle_meta_title           boolean, true if metadata title should be mangled
@@ -282,12 +282,15 @@ def do_book(
     # If series info was expected and found, then mangle the book's folder name by prepending the book's series index.
     # Once the folder structure has been determined, create the destination folder(s) if they do not exist.
 
-    if series > '' and foldermode == 'author,series,book':
+    if series > '' and foldermode in ['author,series,book', 'series,book']:
         if series_index == '':
             series_index = '99'
         book_folder = sanitize_filename(f'{series_index:>03s} - {book_folder}')
-        book_folder_dst_path = author_folder_dst_path / sanitize_filename(f'{series} Series') / book_folder
-    elif foldermode == 'book':
+        if foldermode == 'author,series,book':
+            book_folder_dst_path = author_folder_dst_path / sanitize_filename(f'{series} Series') / book_folder
+        else:
+            book_folder_dst_path =  jellyfin_store / sanitize_filename(f'{series} Series') / book_folder
+    elif foldermode in ['book', 'series,book']:
         book_folder_dst_path = jellyfin_store / book_folder
     else:
         book_folder_dst_path = author_folder_dst_path / book_folder
@@ -355,7 +358,7 @@ def do_book(
             copy_metadata = True
 
         if copy_metadata:
-            if series > '' and foldermode == 'author,series,book':
+            if series > '' and foldermode in ['author,series,book', 'series,book']:
                 if titleel and mangle_meta_title:
                     titleel.firstChild.data = f'{series_index:>03s} - {titleel.firstChild.data}'
                 if sortel and mangle_meta_title_sort:
@@ -398,13 +401,13 @@ def do_construct(section: configparser.SectionProxy) -> None:
     # sanity check configuration parameters
     try:
         if not calibre_store.is_dir():
-            raise ValueError(f'calibreStore value "{calibre_store}" is not a directory')
+            raise ValueError(f'calibreStore value "{calibre_store}" is not a directory or does not exist')
         if not jellyfin_store.is_dir():
-            raise ValueError(f'jellyfinStore value "{jellyfin_store}" is not a directory')
+            raise ValueError(f'jellyfinStore value "{jellyfin_store}" is not a directory or does not exist')
         if jellyfin_store.samefile(calibre_store):
             raise ValueError('jellyfinStore and calibreStore must be different locations')
-        if foldermode not in ('book', 'author,series,book'):
-            raise ValueError('foldermode value must be "book" or "author,series,book"')
+        if foldermode not in ('book', 'series,book', 'author,series,book'):
+            raise ValueError('foldermode value must be "book", "series,book" or "author,series,book"')
         if author_folders[0] == '':
             raise ValueError('authorFolders must contain at least one entry')
         if book_file_types[0] == '':
@@ -419,15 +422,12 @@ def do_construct(section: configparser.SectionProxy) -> None:
     # for each configured author
     for author_folder in author_folders:
 
-        # get and create destination author folder
+        # get/check author paths
         author_folder_src_path = calibre_store / author_folder
         author_folder_dst_path = jellyfin_store / author_folder
-        if foldermode == 'author,series,book':
-            try:
-                author_folder_dst_path.mkdir(parents=True, exist_ok=True)
-            except OSError as excep:
-                logging.warning('Could not create author folder "%s": %s', author_folder_dst_path, excep)
-                continue
+        if not author_folder_src_path.exists():
+            logging.warning(f'Author folder "{author_folder}" not found in Calibre store "{calibre_store}".')
+            continue
 
         # for each book folder in source author folder
         for book_folder_src_path in author_folder_src_path.iterdir():
