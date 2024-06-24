@@ -10,8 +10,8 @@ Python script to construct a Jellyfin ebook library from a Calibre library.
   * ...\series\book\\...
   * ...\book\\...
 * Destination book folder contains
-  * symlink to (single) book file in Calibre library (based on configured order of preference)
-  * symlink to cover image in Calibre library
+  * copy of (single) book file in Calibre library (based on configured order of preference)
+  * copy of cover image in Calibre library
   * copy, possibly modified, of Calibre's metadata file
 * Books are selected for inclusion by listing author folders in the .cfg file
 * Series handling
