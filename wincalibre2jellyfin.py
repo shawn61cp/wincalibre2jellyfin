@@ -436,7 +436,7 @@ def do_construct(section: configparser.SectionProxy) -> None:
                     author_folder_dst_path, book_folder_src_path,
                     book_file_types, foldermode, jellyfin_store,
                     mangle_meta_title, mangle_meta_title_sort
-            )
+                )
 
 
 # ------------------
