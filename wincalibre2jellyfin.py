@@ -135,10 +135,37 @@ def read_metadata_file(metadata_file_path: Path) -> minidom.Document | None:
     return doc
 
 
+def format_series_index(series_index: str) -> str:
+
+    """Formats series index string
+
+        series_index            str, series index str extracted from metadata, may be empty
+
+        returns                 str, formatted series index
+                                examples:
+                                ''          ->  '999'
+                                '3'         ->  '003'
+                                '34'        ->  '034'
+                                '345'       ->  '345'
+                                '3456'      ->  '3456'
+                                '3.2'       ->  '003.02'
+    """
+
+    if not series_index:
+        return '999'
+
+    if '.' in series_index:
+        i = series_index.index('.')
+        return f'{series_index[0:i]:>03s}.{series_index[i+1:]:>02s}'
+
+    return f'{series_index:>03s}'
+        
+
 def get_metadata(
     metadata_file_path: Path | None
 ) -> Tuple[
     minidom.Document | None,
+    str,
     str,
     str,
     minidom.Element | None,
@@ -154,6 +181,7 @@ def get_metadata(
         Returns ()          doc, minidom xml doc object
                             str, name of series, empty str if none
                             str, book index in series, empty str if none
+                            str, author (<dc:creator>)
                             element, <dc:title>
                             element, <meta name="calibre:title_sort" content="001 - Book Title"/>
                             element, <dc:description>
@@ -161,21 +189,28 @@ def get_metadata(
 
     series = ''
     series_index = ''
+    author = ''
     doc = None
     titleel = None
     sortel = None
     descel = None
 
     if not metadata_file_path:
-        return doc, series, series_index, titleel, sortel, descel
+        return doc, series, series_index, author, titleel, sortel, descel
 
     doc = read_metadata_file(metadata_file_path)
     if not doc:
-        return doc, series, series_index, titleel, sortel, descel
+        return doc, series, series_index, author, titleel, sortel, descel
 
     # get series info and other elements
 
-    titleel = doc.getElementsByTagName('dc:title')[0]
+    titleels = doc.getElementsByTagName('dc:title')
+    if titleels:
+        titleel = titleels[0]
+
+    authorels = doc.getElementsByTagName('dc:creator')
+    if authorels:
+        author = authorels[0].firstChild.data
 
     descels = doc.getElementsByTagName('dc:description')
     if descels:
@@ -190,7 +225,7 @@ def get_metadata(
         elif metatag.getAttribute('name') == 'calibre:title_sort':
             sortel = metatag
 
-    return doc, series, series_index, titleel, sortel, descel
+    return doc, series, series_index, author, titleel, sortel, descel
 
 
 def write_metadata(metadatadoc: minidom.Document, metadata_file_dst_path: Path) -> None:
@@ -275,17 +310,24 @@ def do_book(
     book_folder = book_folder_src_path.name
     metadata_file_src_path = find_metadata(book_folder_src_path)
     cover_file_src_path = find_cover(book_folder_src_path)
-    metadatadoc, series, series_index, titleel, sortel, descel = get_metadata(metadata_file_src_path)
+    metadatadoc, series, series_index, author, titleel, sortel, descel = get_metadata(metadata_file_src_path)
 
-    # Output is organized as '.../author/series/book/book.ext' or '.../book/book.ext' depending on foldermode.
-    # If series info was expected but not found, output structure collapses to '.../author/book/book.ext'.
-    # If series info was expected and found, then mangle the book's folder name by prepending the book's series index.
-    # Once the folder structure has been determined, create the destination folder(s) if they do not exist.
+    if metadatadoc and not titleel:
+        logging.warning('Missing normally required <dc:title> element in metadata for "%s"', book_folder_src_path)
+
+    if metadatadoc and not author:
+        logging.warning('Missing normally required <dc:creator> (i.e. author) element in metadata for "%s"', book_folder_src_path)
+
+    # Output is organized as '.../author/series/book/book.ext', '.../series/book/book.ext'
+    # or '.../book/book.ext' depending on foldermode.  If series info was expected but not found,
+    # output structure collapses to '.../author/book/book.ext' in author,series,book mode
+    # or '.../book/book.ext' in series,book mode.
+    # If series info was expected and found, then mangle the book's folder name by prepending
+    # the book's series index. Once the folder structure has been determined,
+    # create the destination folder(s) if they do not exist.
 
     if series > '' and foldermode in ['author,series,book', 'series,book']:
-        if series_index == '':
-            series_index = '999'
-        book_folder = sanitize_filename(f'{series_index:>03s} - {book_folder}')
+        book_folder = sanitize_filename(f'{format_series_index(series_index)} - {book_folder}')
         if foldermode == 'author,series,book':
             book_folder_dst_path = author_folder_dst_path / sanitize_filename(f'{series} Series') / book_folder
         else:
@@ -360,11 +402,11 @@ def do_book(
         if copy_metadata:
             if series > '' and foldermode in ['author,series,book', 'series,book']:
                 if titleel and mangle_meta_title:
-                    titleel.firstChild.data = f'{series_index:>03s} - {titleel.firstChild.data}'
+                    titleel.firstChild.data = f'{format_series_index(series_index)} - {titleel.firstChild.data}'
                 if sortel and mangle_meta_title_sort:
-                    sortel.setAttribute('content', f'{series_index:>03s} - {sortel.getAttribute("content")}')
+                    sortel.setAttribute('content', f'{format_series_index(series_index)} - {sortel.getAttribute("content")}')
                 if descel:
-                    descel.firstChild.data = f'<H4>Book {series_index} of <em>{series}</em></H4>{descel.firstChild.data}'
+                    descel.firstChild.data = f'<H4>Book {series_index} of <em>{series}</em>, by {author}</H4>{descel.firstChild.data}'
 
             write_metadata(metadatadoc, metadata_file_dst_path)
 
@@ -494,11 +536,7 @@ def main(clargs: list[str] | None = None):
     # for each configured Construct
     for section in config:
         if section[0:9] == 'Construct':
-            try:
-                do_construct(config[section])
-            except Exception as unexpected:
-                logging.critical('Unexpected error encountered constructing [%s]: %s', section, unexpected)
-                sys.exit(-1)
+            do_construct(config[section])
 
 
 if __name__ == '__main__':
