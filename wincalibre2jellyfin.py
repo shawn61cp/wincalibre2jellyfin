@@ -1,11 +1,13 @@
 #!/usr/bin/python3
 
-"""calibre2jellyfin.py
+"""wincalibre2jellyfin.py
 
    Python script to construct a Jellyfin ebook library from a Calibre library.
 
    2023-11-17 initial revision
    author Shawn C. Powell
+   contributors Cudail
+   license GPL3
 """
 
 import sys
@@ -303,6 +305,7 @@ def do_book(
     # find first instance of configured book file types
     book_file_src_path = find_book(book_file_types, book_folder_src_path)
     if not book_file_src_path:
+        logging.warning('No book file of configured type was found in "%s"', book_folder_src_path)
         return
     print(book_folder_src_path, flush=True)
 
@@ -331,7 +334,7 @@ def do_book(
         if foldermode == 'author,series,book':
             book_folder_dst_path = author_folder_dst_path / sanitize_filename(f'{series} Series') / book_folder
         else:
-            book_folder_dst_path =  jellyfin_store / sanitize_filename(f'{series} Series') / book_folder
+            book_folder_dst_path = jellyfin_store / sanitize_filename(f'{series} Series') / book_folder
     elif foldermode in ['book', 'series,book']:
         book_folder_dst_path = jellyfin_store / book_folder
     else:
