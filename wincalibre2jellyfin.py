@@ -27,6 +27,7 @@ from shutil import copyfile
 
 CONFIG_FILE_PATH = Path(Path(__file__).stem + '.cfg')
 CMDARGS: argparse.Namespace
+VERSION: str = '2024-11-22'
 
 
 # ------------------
@@ -849,7 +850,17 @@ def main(clargs: list[str] | None = None):
         action='store_true',
         help='Emit debug information.'
     )
+    cmdparser.add_argument(
+        '-v', '--version',
+        dest='version',
+        action='store_true',
+        help='Display version string.'
+    )
     CMDARGS = cmdparser.parse_args(clargs)
+
+    if CMDARGS.version:
+        print(f'version {VERSION}', flush=True)
+        return
 
     # read configuration
     try:

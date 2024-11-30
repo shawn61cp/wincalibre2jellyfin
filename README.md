@@ -119,6 +119,7 @@ _The "series/book" option is intended for use with eComics, thanks for this go t
       * This displays normal console output plus showing where files would be output but does not actually export anything.
     * -\-debug
       * Displays lots of path and metadata information.  Useful if you need to look into why a book is or is not being selected.
+    * -\-version
   * New configurations (see example .cfg)
     * selectionMode = [author | subject]
     * subjects = ...
