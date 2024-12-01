@@ -329,7 +329,7 @@ class BookMetadata:
             returns
                 None
 
-            This is a workaround for some unicode decode errors that
+            This is a workaround for some (fairly rare) unicode decode errors that
             were encountered during testing under Windows (10).
             It's puzzling because using the same Calibre library
             under Linux did not suffer from the issue.
@@ -362,6 +362,7 @@ class BookMetadata:
         except OSError as excep:
             logging.warning('Could not read metadata file "%s": %s', metadata_file_path, excep)
         except UnicodeDecodeError:
+            logging.info('Using ascii backslash fallback for metadata file "%s"', metadata_file_path)
             self.read_metadata_file_fallback(metadata_file_path)
         except Exception as excep:
             logging.warning('Could not parse metadata file "%s": %s', metadata_file_path, excep)
