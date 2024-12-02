@@ -201,7 +201,11 @@ options:
   --debug               Emit debug information.</pre>
 </pre>
 
-#### Calibre Author Folders
+## Real Life
+
+The installation and usage instructions above work fine but other situations may be encountered or other conveniences desired.
+
+### Calibre Author Folders
 
 Typically the Calibre author folder is named exactly as the author appears in the Calibre interface.  Occasionally however it is not.  I have seen this when Calibre displays authors as "Jane Doe & John Q. Public" but the folder name is actually just "Jane Doe".  Also when the list of authors is very long, as happens in technical books, Calibre will limit the length of the folder name.
 
@@ -209,7 +213,7 @@ If you find that an expected author does not show up in the created Jellyfin lib
 
 Another thing I have encountered is when multiple versions of the author name exist, such as "Public, John Q." and "John Q. Public", and they are then consolidated, Calibre actually moves the books into the folder matching the consolidated name.  If the author name configured for calibre2jellyfin happened to match the author name that "went away", updates to that author's books may appear to die, or you might see two different versions of the same author in Jellyfin.  The solution is to just delete, in Jellyfin, one or both authors, ensure that the author configured in the .cfg file matches the Calibre author folder, then re-run the script to have them cleanly re-created.  Jellyfin will eventually detect the changes and update the display contents.  You can also right-click on an item within Jellyfin and request an immediate metadata refresh.  Even so sometimes it will take a few minutes  for Jellyfin to recognize the changes.
 
-#### Tricks with \[Construct\] jellyfinStore
+### Tricks with \[Construct\] jellyfinStore
 
 Although the instructions in the example .cfg file state categorically that the jellyfinStore parameter should be set to the location of the Jellyfin library, there actually is some wiggle room.
 
@@ -225,7 +229,7 @@ Suppose that you want top level folders in your Jellyfin library that separate y
 
 Then using your desired selectionMode, arrange for appropriate books to be output from each \[Construct...\] section.  Jellyfin would then display drillable category folders above the author folders (or whatever folderMode you choose).
 
-#### Mature Content
+### Mature Content
 
 Selection by author, although good for this purpose, is not exactly 100% perfect since it is possible for a single author to write content of differing level.
 
