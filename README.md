@@ -243,11 +243,11 @@ Although the instructions in the example .cfg file state categorically that the 
 Suppose that you want top level folders in your Jellyfin library that separate your fiction library into "Science Fiction", "Fantasy", "Westerns", and "Romance".  You could create the following structure for the Jellyfin library and then create separate \[Construct\] sections for each top level category.
 
 <pre>
-.../fiction/                <- point the Jellyfin library here
-    ├── Fantasy/            <- point a [ConstructFantasy] jellyfinStore param here
-    ├── Romance/            <- point a [ConstructRomance] jellyfinStore param here
-    ├── Science Fiction/    <- point a [ConstructSciFi] jellyfinStore param here
-    └── Westerns/           <- point a [ConstructWesterns] jellyfinStore param here
+...\fiction\                <- point the Jellyfin library here
+    ├── Fantasy\            <- point a [ConstructFantasy] jellyfinStore param here
+    ├── Romance\            <- point a [ConstructRomance] jellyfinStore param here
+    ├── Science Fiction\    <- point a [ConstructSciFi] jellyfinStore param here
+    └── Westerns\           <- point a [ConstructWesterns] jellyfinStore param here
 </pre>
 
 Then using your desired selectionMode, arrange for appropriate books to be output from each \[Construct...\] section.  Jellyfin would then display drillable category folders above the author folders (or whatever folderMode you choose).
