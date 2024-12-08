@@ -281,7 +281,7 @@ The reports described here require the sqlite3 command shell and a couple unix u
 * Unix Utils
   * Create a folder in which to install the unix utilities.  This example will use <code>C:\unxutils</code>.
   * Download the UnxUtils zip file from [https://sourceforge.net/projects/unxutils/](https://sourceforge.net/projects/unxutils/) into <code>C:\unxutils</code> and extract it there.  You can find the checksums in the Files tab in unxutils/current. Click on the (i) info button.
-  * Add <code>C:\unxutils</code> to your PATH
+  * Add <code>C:\UnxUtils\usr\local\wbin</code> to your PATH
     * Click the start button, search for and click <code>edit the system environment variables</code>.
     * Click <code>Environment Variables</code> at the bottom of the dialog.
     * Click <code>Path</code> in the system variables section, then click <code>Edit</code>.  (The system path makes it available to all users.)
