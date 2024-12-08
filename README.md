@@ -262,6 +262,69 @@ Selection by subject gives finer grained control but tags are often missing and 
 
 Another approach would be to combine construction methods.  Nothing prevents having multiple \[Construct\] sections that output to the same Jellyfin library.  (You probably would want to use the same foldermode.) One could exclude problematic authors (No offense, authors!) from a selection-by-author \[Construct\] and then handle those within a selection-by-subject \[Construct\].
 
+### Curation
+
+#### Prerequisites
+
+The reports described here require the sqlite3 command shell and a couple unix utilities.  To install them follow these instructions.
+
+* Sqlite3
+  * Create a folder in which to install the sqlite utilities.  This example will use <code>C:\sqlite</code>.
+  * Download the sqlite-tools-win-x64-nnnnnnn.zip file from the <em>Precompiled Binaries for Windows</em> section at [https://sqlite.org/download.html](https://sqlite.org/download.html) into <code>C:\sqlite</code> and extract it there.  It's always a good idea to run a virus scan on anything downloaded from the internet and to verify the listed checksum.
+  * Add <code>C:\sqlite</code> to your PATH
+    * Click the start button, search for and click <code>edit the system environment variables</code>.
+    * Click <code>Environment Variables</code> at the bottom of the dialog.
+    * Click <code>Path</code> in the system variables section, then click <code>Edit</code>.  (The system path makes it available to all users.)
+    * Click <code>New</code>, enter <code>C:\sqlite</code> and press Enter.
+    * Click <code>OK</code> to complete and exit all three dialogs.
+  * sqlite3 will now be runnable from a cmd prompt.
+* Unix Utils
+  * Create a folder in which to install the unix utilities.  This example will use <code>C:\unxutils</code>.
+  * Download the UnxUtils zip file from [https://sourceforge.net/projects/unxutils/](https://sourceforge.net/projects/unxutils/) into <code>C:\unxutils</code> and extract it there.  You can find the checksums in the Files tab in unxutils/current. Click on the (i) info button.
+  * Add <code>C:\unxutils</code> to your PATH
+    * Click the start button, search for and click <code>edit the system environment variables</code>.
+    * Click <code>Environment Variables</code> at the bottom of the dialog.
+    * Click <code>Path</code> in the system variables section, then click <code>Edit</code>.  (The system path makes it available to all users.)
+    * Click <code>New</code>, enter <code>C:\unxutils</code> and press Enter.
+    * Click <code>OK</code> to complete and exit all three dialogs.
+  * Several of the standard Linux / Unix utilities will now be runnable from a cmd prompt.  We are interested in the <code>cat</code>, <code>uniq</code>, and <code>less</code> utilities.
+
+#### Listing Calibre author folders that will <em>not</em> be output by calibre2jellyfin.
+
+Step 1 - Get a list of author folders in the Calibre library.  If by chance your 'ls' command is aliased to always output ansi color codes, prefix the ls command with a backslash '\ls' to run a non-aliased 'ls' and  prevent this.  Otherwise these steps will not work.
+
+<code>dir /b "PATH_TO_CALIBRE_LIBRARY" >afolders_c</code>
+
+Step 2 - Get a list of author folders that calibre2jellyfin is exporting.  The following assumes, as described above, that calibre2jellyfin is installed under the <code>jellyfin</code> account.
+
+<code>"PATH_TO_WINCALIBRE2JELLYFIN.PY\wincalibre2jellyfin.py --list afolder >afolders_jf</code>
+
+Step 3 - Construct a list of folders that only exist in one but not both of the lists.  Absent something strange having occurred, there cannot be folders output by calibre2jellyfin that do not exist in the Calibre library, so this leaves only those Calibre library folders that will not be exported.
+
+<code>cat afolders_c afolders_jf | sort | uniq -u >afolders_jf</code>
+
+Step 4 - Review the list.  Note that there are a small number of files in the Calibre library such as the metadata.db that will appear in this list.  It seems easier to just ignore them rather than taking the trouble to filter them out.
+
+<code>less afolders_todo</code>
+
+#### Compact list of Calibre author's series
+
+<strong><em><ins>Caveat Usor:</ins></em></strong> The following uses sqlite3 to access the Calibre metadata database directly.  Read-only select statements should not present problems.  Nevertheless it is a good idea to make a backup of such an important file.
+
+<pre>sqlite3 -column "PATH_TO_CALIBRE_LIBRARY\metadata.db" "select A.name as author, S.name as series from authors A inner JOIN books_authors_link BAL on BAL.author = A.id inner JOIN books_series_link BSL on BSL.book = BAL.book inner JOIN series S on  S.id = BSL.series group by A.name, S.name order by 1, 2 ;"|less -S</pre>
+
+#### Compact list of Calibre author's books
+
+<strong><em><ins>Caveat Usor:</ins></em></strong> The following uses sqlite3 to access the Calibre metadata database directly.  Read-only select statements should not present problems.  Nevertheless it is a good idea to make a backup of such an important file.
+
+<pre>sqlite3 -column "PATH_TO_CALIBRE_LIBRARY\metadata.db" "select A.name as author, B.title as book, coalesce(S.name, '') as series from authors A inner join books_authors_link BAL on  BAL.author = A.id inner join books B on B.id = BAL.book left join books_series_link BSL on  BSL.book = B.id left join series S on S.id = BSL.series order by 1, 2;"|less -S</pre>
+
+#### Compact list of Calibre collaborator's books
+
+<strong><em><ins>Caveat Usor:</ins></em></strong> The following uses sqlite3 to access the Calibre metadata database directly.  Read-only select statements should not present problems.  Nevertheless it is a good idea to make a backup of such an important file.
+
+<pre>sqlite3 -column "PATH_TO_CALIBRE_LIBRARY\metadata.db" "select (select group_concat(A.name, ',') from books_authors_link BAL inner join authors A on  A.id = BAL.author where BAL.book = B.id) as author, B.title as book, coalesce(S.name, '') as series from books B left join books_series_link BSL on BSL.book = B.id left join series S on  S.id = BSL.series order by 1, 2;"|less -S</pre>
+
 ## Odds and Ends
 
 * I have noticed that Jellyfin does not re-paginate if you resize the browser window or change the zoom factor <em>after</em> you have opened the book.  However if you do these <em>before</em> opening the book it does so nicely.
