@@ -291,11 +291,11 @@ The reports described here require the sqlite3 command shell and a couple unix u
 
 #### Listing Calibre author folders that will <em>not</em> be output by calibre2jellyfin.
 
-Step 1 - Get a list of author folders in the Calibre library.  If by chance your 'ls' command is aliased to always output ansi color codes, prefix the ls command with a backslash '\ls' to run a non-aliased 'ls' and  prevent this.  Otherwise these steps will not work.
+Step 1 - Get a list of author folders in the Calibre library.
 
 <code>dir /b "PATH_TO_CALIBRE_LIBRARY" >afolders_c</code>
 
-Step 2 - Get a list of author folders that calibre2jellyfin is exporting.  The following assumes, as described above, that calibre2jellyfin is installed under the <code>jellyfin</code> account.
+Step 2 - Get a list of author folders that calibre2jellyfin is exporting.
 
 <code>"PATH_TO_WINCALIBRE2JELLYFIN.PY\wincalibre2jellyfin.py" --list afolder >afolders_jf</code>
 
