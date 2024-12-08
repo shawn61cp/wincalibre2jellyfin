@@ -301,7 +301,7 @@ Step 2 - Get a list of author folders that calibre2jellyfin is exporting.  The f
 
 Step 3 - Construct a list of folders that only exist in one but not both of the lists.  Absent something strange having occurred, there cannot be folders output by calibre2jellyfin that do not exist in the Calibre library, so this leaves only those Calibre library folders that will not be exported.
 
-<code>cat afolders_c afolders_jf | sort | uniq -u >afolders_jf</code>
+<code>cat afolders_c afolders_jf | sort | uniq -u >afolders_todo</code>
 
 Step 4 - Review the list.  Note that there are a small number of files in the Calibre library such as the metadata.db that will appear in this list.  It seems easier to just ignore them rather than taking the trouble to filter them out.
 
