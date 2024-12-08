@@ -297,7 +297,7 @@ Step 1 - Get a list of author folders in the Calibre library.  If by chance your
 
 Step 2 - Get a list of author folders that calibre2jellyfin is exporting.  The following assumes, as described above, that calibre2jellyfin is installed under the <code>jellyfin</code> account.
 
-<code>"PATH_TO_WINCALIBRE2JELLYFIN.PY\wincalibre2jellyfin.py --list afolder >afolders_jf</code>
+<code>"PATH_TO_WINCALIBRE2JELLYFIN.PY\wincalibre2jellyfin.py" --list afolder >afolders_jf</code>
 
 Step 3 - Construct a list of folders that only exist in one but not both of the lists.  Absent something strange having occurred, there cannot be folders output by calibre2jellyfin that do not exist in the Calibre library, so this leaves only those Calibre library folders that will not be exported.
 
