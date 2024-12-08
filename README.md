@@ -285,7 +285,7 @@ The reports described here require the sqlite3 command shell and a couple unix u
     * Click the start button, search for and click <code>edit the system environment variables</code>.
     * Click <code>Environment Variables</code> at the bottom of the dialog.
     * Click <code>Path</code> in the system variables section, then click <code>Edit</code>.  (The system path makes it available to all users.)
-    * Click <code>New</code>, enter <code>C:\unxutils</code> and press Enter.
+    * Click <code>New</code>, enter <code>C:\UnxUtils\usr\local\wbin</code> and press Enter.
     * Click <code>OK</code> to complete and exit all three dialogs.
   * Several of the standard Linux / Unix utilities will now be runnable from a cmd prompt.  We are interested in the <code>cat</code>, <code>uniq</code>, and <code>less</code> utilities.
 
