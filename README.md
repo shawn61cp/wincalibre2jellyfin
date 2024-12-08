@@ -264,6 +264,8 @@ Another approach would be to combine construction methods.  Nothing prevents hav
 
 ### Curation
 
+<strong><em><ins>Caveat Usor:</ins></em></strong> Several of the following procedures use sqlite3 to access the Calibre metadata database directly.  Read-only select statements should not present problems.  Nevertheless it is a good idea to make a backup of such an important file.
+
 #### Prerequisites
 
 The reports described here require the sqlite3 command shell and a couple unix utilities.  To install them follow these instructions.
@@ -309,19 +311,13 @@ Step 4 - Review the list.  Note that there are a small number of files in the Ca
 
 #### Compact list of Calibre author's series
 
-<strong><em><ins>Caveat Usor:</ins></em></strong> The following uses sqlite3 to access the Calibre metadata database directly.  Read-only select statements should not present problems.  Nevertheless it is a good idea to make a backup of such an important file.
-
 <pre>sqlite3 -column "PATH_TO_CALIBRE_LIBRARY\metadata.db" "select A.name as author, S.name as series from authors A inner JOIN books_authors_link BAL on BAL.author = A.id inner JOIN books_series_link BSL on BSL.book = BAL.book inner JOIN series S on  S.id = BSL.series group by A.name, S.name order by 1, 2 ;"|less -S</pre>
 
 #### Compact list of Calibre author's books
 
-<strong><em><ins>Caveat Usor:</ins></em></strong> The following uses sqlite3 to access the Calibre metadata database directly.  Read-only select statements should not present problems.  Nevertheless it is a good idea to make a backup of such an important file.
-
 <pre>sqlite3 -column "PATH_TO_CALIBRE_LIBRARY\metadata.db" "select A.name as author, B.title as book, coalesce(S.name, '') as series from authors A inner join books_authors_link BAL on  BAL.author = A.id inner join books B on B.id = BAL.book left join books_series_link BSL on  BSL.book = B.id left join series S on S.id = BSL.series order by 1, 2;"|less -S</pre>
 
 #### Compact list of Calibre collaborator's books
-
-<strong><em><ins>Caveat Usor:</ins></em></strong> The following uses sqlite3 to access the Calibre metadata database directly.  Read-only select statements should not present problems.  Nevertheless it is a good idea to make a backup of such an important file.
 
 <pre>sqlite3 -column "PATH_TO_CALIBRE_LIBRARY\metadata.db" "select (select group_concat(A.name, ',') from books_authors_link BAL inner join authors A on  A.id = BAL.author where BAL.book = B.id) as author, B.title as book, coalesce(S.name, '') as series from books B left join books_series_link BSL on BSL.book = B.id left join series S on  S.id = BSL.series order by 1, 2;"|less -S</pre>
 
