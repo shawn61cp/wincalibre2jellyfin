@@ -313,6 +313,10 @@ Step 4 - Review the list.  Note that there are a small number of files in the Ca
 
 <pre>sqlite3 -column "PATH_TO_CALIBRE_LIBRARY\metadata.db" "select A.name as author, S.name as series from authors A inner JOIN books_authors_link BAL on BAL.author = A.id inner JOIN books_series_link BSL on BSL.book = BAL.book inner JOIN series S on  S.id = BSL.series group by A.name, S.name order by 1, 2 ;"|less -S</pre>
 
+#### Compact list of Calibe series
+
+<pre>sqlite3 -column "PATH_TO_CALIBRE_LIBRARY\metadata.db" "select distinct S.name as series, (select group_concat(A.name, ',') from books_authors_link BAL inner join  authors A on  A.id = BAL.author where BAL.book = B.id) as author from books B inner join books_series_link BSL on BSL.book = B.id inner join series S on S.id = BSL.series order by 1, 2;" | less</pre>
+
 #### Compact list of Calibre author's books
 
 <pre>sqlite3 -column "PATH_TO_CALIBRE_LIBRARY\metadata.db" "select A.name as author, B.title as book, coalesce(S.name, '') as series from authors A inner join books_authors_link BAL on  BAL.author = A.id inner join books B on B.id = BAL.book left join books_series_link BSL on  BSL.book = B.id left join series S on S.id = BSL.series order by 1, 2;"|less -S</pre>
