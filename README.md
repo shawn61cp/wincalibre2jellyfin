@@ -315,7 +315,11 @@ Step 4 - Review the list.  Note that there are a small number of files in the Ca
 
 #### Compact list of Calibe series
 
-<pre>sqlite3 -column "PATH_TO_CALIBRE_LIBRARY\metadata.db" "select distinct S.name as series, (select group_concat(A.name, ',') from books_authors_link BAL inner join  authors A on  A.id = BAL.author where BAL.book = B.id) as author from books B inner join books_series_link BSL on BSL.book = B.id inner join series S on S.id = BSL.series order by 1, 2;" | less</pre>
+<pre># With authors
+sqlite3 -column "PATH_TO_CALIBRE_LIBRARY\metadata.db" "select distinct S.name as series, (select group_concat(A.name, ',') from books_authors_link BAL inner join  authors A on  A.id = BAL.author where BAL.book = B.id) as authors from books B inner join books_series_link BSL on BSL.book = B.id inner join series S on S.id = BSL.series order by 1, 2;" | less
+# With author folder
+sqlite3 -column "PATH_TO_CALIBRE_LIBRARY\metadata.db" "select distinct S.name as series, substr(B.path, 1, instr(B.path, '/')-1) as afolder from books B inner join books_series_link BSL on  BSL.book = B.id inner join series S on  S.id = BSL.series order by 1, 2;" | less
+</pre>
 
 #### Compact list of Calibre author's books
 
@@ -323,7 +327,7 @@ Step 4 - Review the list.  Note that there are a small number of files in the Ca
 
 #### Compact list of Calibre collaborator's books
 
-<pre>sqlite3 -column "PATH_TO_CALIBRE_LIBRARY\metadata.db" "select (select group_concat(A.name, ',') from books_authors_link BAL inner join authors A on  A.id = BAL.author where BAL.book = B.id) as author, B.title as book, coalesce(S.name, '') as series from books B left join books_series_link BSL on BSL.book = B.id left join series S on  S.id = BSL.series order by 1, 2;"|less -S</pre>
+<pre>sqlite3 -column "PATH_TO_CALIBRE_LIBRARY\metadata.db" "select (select group_concat(A.name, ',') from books_authors_link BAL inner join authors A on  A.id = BAL.author where BAL.book = B.id) as authors, B.title as book, coalesce(S.name, '') as series from books B left join books_series_link BSL on BSL.book = B.id left join series S on  S.id = BSL.series order by 1, 2;"|less -S</pre>
 
 ## Odds and Ends
 
