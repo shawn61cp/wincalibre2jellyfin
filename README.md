@@ -355,25 +355,10 @@ To install them follow these instructions.
   * Several of the standard Linux / Unix utilities will now be runnable from a cmd prompt.
   We are interested in the <code>cat</code>, <code>uniq</code>, and <code>less</code> utilities.
 
-#### Listing Calibre author folders that will <em>not</em> be output by calibre2jellyfin.
+#### Listing Calibre author folders etc. that will <em>not</em> be output by calibre2jellyfin.
 
-<em>2024-12-14: This method is obsolete since the addition of the --invert command line option.</em>
-
-Step 1 - Get a list of author folders in the Calibre library.
-
-<code>dir /b "PATH_TO_CALIBRE_LIBRARY" >afolders_c</code>
-
-Step 2 - Get a list of author folders that calibre2jellyfin is exporting.
-
-<code>"PATH_TO_WINCALIBRE2JELLYFIN.PY\wincalibre2jellyfin.py" --list afolder >afolders_jf</code>
-
-Step 3 - Construct a list of folders that only exist in one but not both of the lists.  Absent something strange having occurred, there cannot be folders output by calibre2jellyfin that do not exist in the Calibre library, so this leaves only those Calibre library folders that will not be exported.
-
-<code>cat afolders_c afolders_jf | sort | uniq -u >afolders_todo</code>
-
-Step 4 - Review the list.  Note that there are a small number of files in the Calibre library such as the metadata.db that will appear in this list.  It seems easier to just ignore them rather than taking the trouble to filter them out.
-
-<code>less afolders_todo</code>
+The --list option together with the --invert option report items that will not be exported.  I use this
+as my to-do list.
 
 #### Compact list of Calibre author's series
 
