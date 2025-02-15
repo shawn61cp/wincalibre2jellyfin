@@ -281,6 +281,13 @@ Calibre and Jellyfin libraries nice and clean, as opposed to the lengthy run-on 
 Another thing I have encountered is when multiple versions of the author name exist, such as "Public, John Q." and
 "John Q. Public", and they are then consolidated, Calibre actually moves the books into the folder matching the consolidated name.  If the author name configured for calibre2jellyfin happened to match the author name that "went away", updates to that author's books may appear to die, or you might see two different versions of the same author in Jellyfin.  The solution is to just delete, in Jellyfin, one or both authors, ensure that the author configured in the .cfg file matches the Calibre author folder, then re-run the script to have them cleanly re-created.  Jellyfin will eventually detect the changes and update the display contents.  You can also right-click on an item within Jellyfin and request an immediate metadata refresh.  Even so sometimes it will take a few minutes  for Jellyfin to recognize the changes.
 
+<em>Note 2025-02-24: I have found that Jellyfin will delete an entire containing author or other folder
+and all contents, but attemtping to delete at the book level results in only the book file itself  
+being deleted, along with I believe its internal metadata, but not the enclosing book folder  
+nor the cover image nor the metadata opf file.  The book folder must be deleted through the file system.
+Since this is a bit of a nuisance, if I have very much to clean up, I sometimes just delete the author folder
+and let the whole author structure be re-created on the next run or via a manual run.</em>
+
 ### Tricks with \[Construct\] jellyfinStore
 
 Although the instructions in the example .cfg file state categorically that the jellyfinStore parameter should be
